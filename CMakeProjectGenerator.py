@@ -1,4 +1,4 @@
-import os
+from FileUtils import write_file, create_directory
 
 
 def generate_cmake_lists(project_name):
@@ -46,43 +46,41 @@ int main(){{
 '''
 
 
-def generate_includes_cmake_lists(project_name):
+def generate_include_cmake_lists(project_name):
     return f'''\
 target_include_directories({project_name} PRIVATE ${{CMAKE_CURRENT_LIST_DIR}})
 '''
 
 
-def write_file(name: str, content: str) -> None:
-    with open(name, 'w') as out_file:
-        out_file.write(content)
+def generate_project(project_name, project_path):
+    try:
+        project_file_name = project_name.get().title().replace(' ', '')
+
+        # The main folder where all project files stored
+        root_folder = project_path.join(project_file_name)
+
+        # Generate all folders
+        create_directory(root_folder)
+        create_directory(root_folder.join('include'))
+        create_directory(root_folder.join('src'))
+        create_directory(root_folder.join('resources'))
+
+        try:
+            # Create CMakeLists.txt file for each folder.
+            write_file(root_folder.join('CMakeLists.txt'), generate_cmake_lists(project_file_name))
+            write_file(root_folder.join('src', 'CMakeLists.txt'), generate_source_cmake_lists(project_file_name))
+            write_file(root_folder.join('include', 'CMakeLists.txt'), generate_include_cmake_lists(project_file_name))
+            write_file(root_folder.join('resources', 'CMakeLists.txt'), '')
+
+            # Create main.cpp file.
+            write_file(root_folder.join('src', 'main.cpp'), generate_main())
+
+        except OSError as e:
+            raise ProjectGenerationError(f"Error creating project: {str(e)}")
+
+    except Exception as e:
+        raise ProjectGenerationError(f"An unexpected error occurred: {str(e)}")
 
 
-def generate_directory(directory_name):
-    os.makedirs(directory_name)
-
-
-def generate_project(project_name, path_name):
-
-    path = path_name.get()
-    project_file_name = project_name.get().title().replace(' ', '')
-
-    # Create root folder with CMakeLists.txt file.
-    root_folder = str(os.path.join(path, project_file_name))
-    generate_directory(root_folder)
-    write_file(str(os.path.join(root_folder, 'CMakeLists.txt')), generate_cmake_lists(project_file_name))
-
-    # Create source folder with main and CMakeLists.txt file.
-    src_folder = str(os.path.join(path, project_file_name, 'src'))
-    generate_directory(src_folder)
-    write_file(str(os.path.join(src_folder, 'CMakeLists.txt')), generate_source_cmake_lists(project_file_name))
-    write_file(str(os.path.join(src_folder, 'main.cpp')), generate_main())
-
-    # Create includes folder with CMakeLists.txt file.
-    include_folder = str(os.path.join(path, project_file_name, 'include'))
-    generate_directory(include_folder)
-    write_file(str(os.path.join(include_folder, 'CMakeLists.txt')), generate_includes_cmake_lists(project_file_name))
-
-    # Create includes folder with CMakeLists.txt file.
-    resources_folder = str(os.path.join(path, project_file_name, 'resources'))
-    generate_directory(resources_folder)
-    write_file(str(os.path.join(resources_folder, 'CMakeLists.txt')), '')
+class ProjectGenerationError(Exception):
+    pass

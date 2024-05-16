@@ -1,5 +1,6 @@
 import os
-from CMakeProjectGenerator import write_file
+from FileUtils import write_file
+from InputValidator import validate_class_name
 
 
 def generate_header_content(name: str) -> str:
@@ -25,31 +26,27 @@ def generate_source_content(name: str) -> str:
 '''
 
 
-def generate_file_name(folder: str, cls_name: str) -> list[str]:
-
-    if folder == '':
-        return [0, 'Please select a folder.']
-
-    if 'src' not in os.listdir(folder) or 'include' not in os.listdir():
-        return [0, 'src/include directory is missing']
-
-    if cls_name == '':
-        return [0, 'Please enter a filename.']
-
-    filename = ' '.join(word.capitalize() for word in cls_name.split(' '))
-
-    if filename + '.h' in os.listdir('./include'):
-        return [0, filename + '.h already exists.']
-
-    return [1, filename]
+class ClassGenerationError(Exception):
+    pass
 
 
-def generate_class(folder, cls_name):
+def generate_class(folder, class_name):
+    try:
+        class_filename = validate_class_name(folder.get(), class_name.get())
 
-    state, content = generate_file_name(folder.get(), cls_name.get())
+        header_content = generate_header_content(class_filename)
+        source_content = generate_source_content(class_filename)
 
-    if state == 0:
-        raise FileExistsError(content)
+        # Construct file paths using os.path.join
+        header_file_path = os.path.join(folder.get(), 'include', class_filename + '.h')
+        source_file_path = os.path.join(folder.get(), 'src', class_filename + '.cpp')
 
-    write_file(folder + '/include/' + content + '.h', generate_header_content(content))
-    write_file(folder + '/src/' + content + '.cpp', generate_source_content(content))
+        try:
+            write_file(header_file_path, header_content)
+            write_file(source_file_path, source_content)
+
+        except OSError as e:
+            raise ClassGenerationError(f"Error writing files: {str(e)}")
+
+    except Exception as e:
+        raise ClassGenerationError(str(e))

@@ -7,41 +7,39 @@ from ClassGenerator import generate_class
 from CMakeProjectGenerator import generate_project
 
 
-def get_folder_path():
+def set_folder_path() -> None:
     """
     Open a file dialog to select a folder and set the folder path.
 
     Returns:
         None
     """
-    selected_folder = filedialog.askdirectory(initialdir=os.getcwd())
-    if selected_folder != '':
-        folder_path_var.set(selected_folder)
+    input_folder = filedialog.askdirectory(initialdir=os.getcwd())
+    if input_folder != '':
+        selected_folder.set(input_folder)
 
 
-def create():
+def create() -> None:
     """
     Create either a project or a class based on the selected option.
 
     Returns:
         None
     """
-    selected_folder = folder_path_var.get()
-    class_name_value = class_name_var.get()
-    selected_option = selection_var.get()
+    try:
+        if selected_option.get() == 0:
+            generate_project(selected_folder, text_input)
+            messagebox.showinfo("Success", f"Directory '{selected_folder.get()}' created successfully.")
 
-    if selected_option == 0:
-        try:
-            generate_project(folder_path_var, class_name_var)
-            messagebox.showinfo("Success", f"Directory '{selected_folder}' created successfully.")
-        except FileExistsError:
-            messagebox.showerror("Error", f"Directory '{selected_folder}' already exists.")
-    else:
-        try:
-            generate_class(folder_path_var, class_name_var)
-            messagebox.showinfo("Class " + class_name_value, "created successfully")
-        except Exception as e:
-            messagebox.showerror("Error", e.args[0])
+        else:
+            generate_class(selected_folder, text_input)
+            messagebox.showinfo("Class " + text_input.get(), "created successfully")
+
+    except Exception as e:
+        messagebox.showerror("Error", e.args[0])
+
+    except FileExistsError:
+        messagebox.showerror("Error", f"Directory '{selected_folder.get()}' already exists.")
 
 
 def clear_window() -> None:
@@ -76,7 +74,7 @@ def menu():
 
     def on_create():
         index = options.index(option_combobox.get())
-        selection_var.set(index)
+        selected_option.set(index)
         set_visuals()
 
     create_button = Button(root, command=on_create, text="Create")
@@ -93,8 +91,7 @@ def set_visuals():
     Returns:
         None
     """
-    selected_option = selection_var.get()
-    option_string = "Project" if selected_option == 0 else "Class"
+    option_string = "Project" if selected_option.get() == 0 else "Class"
 
     clear_window()
 
@@ -106,7 +103,7 @@ def set_visuals():
     class_label.pack()
     window_widgets.append(class_label)
 
-    class_name_entry = Entry(root, textvariable=class_name_var)
+    class_name_entry = Entry(root, textvariable=text_input)
     class_name_entry.pack(pady=5)
     window_widgets.append(class_name_entry)
 
@@ -114,11 +111,11 @@ def set_visuals():
     folder_label.pack()
     window_widgets.append(folder_label)
 
-    folder_path_entry = Entry(root, textvariable=folder_path_var)
+    folder_path_entry = Entry(root, textvariable=selected_folder)
     folder_path_entry.pack(pady=5)
     window_widgets.append(folder_path_entry)
 
-    folder_button = Button(root, text="Browse", command=get_folder_path)
+    folder_button = Button(root, text="Browse", command=set_folder_path)
     folder_button.pack(pady=5)
     window_widgets.append(folder_button)
 
@@ -142,7 +139,7 @@ def main():
 if __name__ == "__main__":
     window_widgets = []
     root = Tk()
-    folder_path_var = StringVar(value=os.getcwd())
-    class_name_var = StringVar(value="")
-    selection_var = IntVar(value=0)
+    selected_folder = StringVar(value=os.getcwd())
+    text_input = StringVar(value="")
+    selected_option = IntVar(value=0)
     main()
